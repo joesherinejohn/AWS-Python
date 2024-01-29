@@ -1,0 +1,65 @@
+# This script manages Amazon EC2 instances using the Boto3 Python SDK.
+#import statements
+import boto3
+import time
+
+
+# create ec2 resource and instance name
+ec2 = boto3.resource("ec2")
+instance_name = "dct-ec2-joe"
+#store instance id
+instance_id = None
+# Check if instance which you are trying to create already exists
+# and only work with an instance that hasn't been terminated
+all_instances = ec2.instances.all()
+instance_exists = False
+
+for instance in all_instances:
+    for tag in instance.tags:
+        if tag['Key']=='Name' and tag['Value']==instance_name:
+            instance_exists= True
+            instance_id = instance.id
+            print(f"An instance named '{instance_name}' with id '{instance_id}' already exists.")
+            break
+    if instance_exists:
+        break
+        
+if instance_exists is False:
+    # Launch a new EC2 instance if it hasn't already been created
+    new_instances = ec2.create_instances(
+        ImageId = 'ami-0a3c3a20c09d6f377',
+        MinCount=1,
+        MaxCount=1,
+        InstanceType='t2.micro',
+        KeyName = 'KP_joe',
+        TagSpecifications=[
+            {
+                'ResourceType':'instance',
+                'Tags': [
+                    {
+                        'Key': 'Name',
+                        'Value': instance_name
+                        
+                    },
+                    ]
+            },
+            ]
+        )
+    instance_id = new_instances[0].id
+    print(f"An instance named '{instance_name}' with id '{instance_id}' has created.")
+
+# # Stop an instance
+# ec2.Instance(instance_id).stop()
+# print(f"An instance named '{instance_name}' with id '{instance_id}' has been stopped.")
+
+# time.sleep(10)
+
+# Start an instance.
+# ec2.Instance(instance_id).start()
+# print(f"An instance named '{instance_name}' with id '{instance_id}' started.")
+
+# time.sleep(10)
+
+# Terminate an instance
+ec2.Instance(instance_id).terminate()
+print(f"An instance named '{instance_name}' with id '{instance_id}' has been terminated.")
